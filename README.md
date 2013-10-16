@@ -30,3 +30,11 @@ extension has prevented the following From Email Address option(s) from being us
 the System-generated Mail Settings From Email Address configured at Administer > Communications > Organization Address 
 and Contact Info: email.with@different.domain.org, email.with@different.domain2.org.'
 
+
+NB: Here are the forms that allow users to select From emails that will be filtered and/or validated:
+1. The 3rd step of the CiviMail wizard
+2. Individual emails being sent from Contact Summary page, Actions > Send email, 
+3. Individual emails being sent from Contact Summary page Activities tab, and for new activity select Send an email, 
+4. Search results page, after selecting contacts with emails, changing action to Send Email to Contacts and clicking Go,
+5. Validate From Address fields on create or updates of the Manage Contribution Pages, Thank you and receipting tab,
+6. Validate From Address fields on Manage Events > Online Registration tab.
