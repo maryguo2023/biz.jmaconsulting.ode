@@ -117,7 +117,7 @@ function ode_civicrm_buildForm($formName, &$form) {
 
     // now add domain from addresses
     $domainEmails = array();
-    $domainFrom = CRM_Core_PseudoConstant::fromEmailAddress();
+    $domainFrom = CRM_Core_OptionGroup::values('from_email_address');
     foreach (array_keys($domainFrom) as $k) {
       $domainEmail = $domainFrom[$k];
       $domainEmails[$domainEmail] = htmlspecialchars($domainEmail);
@@ -128,7 +128,7 @@ function ode_civicrm_buildForm($formName, &$form) {
     $form->add('select', 'fromEmailAddress', ts('From'), $form->_fromEmails, TRUE);
   }
   if ($formName == "CRM_Mailing_Form_Upload") {
-    $fromEmailAddress = CRM_Core_PseudoConstant::fromEmailAddress('from_email_address');
+    $fromEmailAddress = CRM_Core_OptionGroup::values('from_email_address');
     $fromEmailAddress = suppressEmails($fromEmailAddress);
     
     foreach ($fromEmailAddress as $key => $email) {
