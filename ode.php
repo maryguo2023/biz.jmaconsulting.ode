@@ -64,8 +64,9 @@ function ode_civicrm_validate($formName, &$fields, &$files, &$form) {
   if ($formName == "CRM_Contribute_Form_ContributionPage_ThankYou" || $formName == "CRM_Event_Form_ManageEvent_Registration") {
     $config = CRM_Core_Config::singleton();
     $domain = $config->userFrameworkBaseURL;
+    $isSSL = CRM_Core_BAO_Setting::getItem('CiviCRM Preferences', 'enableSSL');
     $details = array();
-    if ($config->enableSSL) { 
+    if ($isSSL) { 
       preg_match('@^(?:https://)?([^/]+)@i', $domain, $matches);
     }
     else {
@@ -145,7 +146,8 @@ function suppressEmails($fromEmailAddress) {
   $config = CRM_Core_Config::singleton();
   $domain = $config->userFrameworkBaseURL;
   $details = array();
-  if ($config->enableSSL) { 
+  $isSSL = CRM_Core_BAO_Setting::getItem('CiviCRM Preferences', 'enableSSL');
+  if ($isSSL) { 
     preg_match('@^(?:https://)?([^/]+)@i', $domain, $matches);
   }
   else {
@@ -167,6 +169,7 @@ function suppressEmails($fromEmailAddress) {
     if (empty($fromEmailAddress)) {
       $message = " You can add another one <a href='%2'>here.</a>";
       $url = CRM_Utils_System::url('civicrm/admin/options/from_email_address', 'group=from_email_address&action=add&reset=1');
+      $fromEmailAddress = array('- select -');
     }
     $status = ts('The Outbound Domain Enforcement extension has prevented the following From Email Address option(s) from being used as it uses a different domain than the System-generated Mail Settings From Email Address configured at Administer > Communications > Organization Address and Contact Info: %1'. $message , array( 1=> implode(', ', $invalidEmails), 2=> $url));
     $session->setStatus($status, ts('Notice'));
