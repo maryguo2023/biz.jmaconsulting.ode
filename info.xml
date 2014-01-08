@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <extension key="biz.jmaconsulting.ode" type="module">
   <file>ode</file>
-  <name>Outbound Domain Enforcement for CiviCRM</name>
-  <description>This extension is designed to preserve the email reputation of your server and its IP by ensuring that all outbound emailis sent from an address with the same domain as the System-generated Mail Settings From Email Address configured at Administer > Communications > Organization Address and Contact Info.</description>
+  <name>Outbound Domain Enforcement</name>
+  <description>This CiviCRM extension is designed to preserve the email reputation of your server and its IP by ensuring that all outbound emailis sent from an address with the same domain as the System-generated Mail Settings From Email Address configured at Administer > Communications > Organization Address and Contact Info.</description>
   <license>AGPL 3.0</license>
   <maintainer>
     <author>JMA Consulting</author>
@@ -10,11 +10,11 @@
   </maintainer>
   <releaseDate>2013-11-06</releaseDate>
   <version>1.0</version>
-  <develStage>alpha</develStage>
+  <develStage>stable</develStage>
   <compatibility>
     <ver>4.3</ver>
   </compatibility>
-  <comments>This is a new, undeveloped module</comments>
+  <comments>Thanks to Brescia University College for sponsoring the development of this module.</comments>
   <civix>
     <namespace>CRM/Ode</namespace>
   </civix>
