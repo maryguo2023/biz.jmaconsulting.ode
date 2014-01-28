@@ -61,9 +61,11 @@ function ode_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
 
 function ode_civicrm_validate($formName, &$fields, &$files, &$form) {
   $errors = array();
-  if ($formName == "CRM_Contribute_Form_ContributionPage_ThankYou" || $formName == "CRM_Event_Form_ManageEvent_Registration") {
+  if (($formName == "CRM_Contribute_Form_ContributionPage_ThankYou" && CRM_Utils_Array::value('is_email_receipt', $fields)) 
+    || ($formName == "CRM_Event_Form_ManageEvent_Registration" && CRM_Utils_Array::value('is_email_confirm', $fields))) {
     $config = CRM_Core_Config::singleton();
-    $domain = $config->userFrameworkBaseURL;
+    $domain = get_domain($config->userFrameworkBaseURL);
+    
     $isSSL = CRM_Core_BAO_Setting::getItem('CiviCRM Preferences', 'enableSSL');
     $details = array();
     if ($isSSL) { 
