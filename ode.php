@@ -61,6 +61,33 @@ function ode_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
 
 function ode_civicrm_validate($formName, &$fields, &$files, &$form) {
   $errors = array();
+  if (in_array($formName, 
+    array(
+      'CRM_Contribute_Form_Contribution',
+      'CRM_Event_Form_Participant',
+      'CRM_Member_Form_Membership',
+      'CRM_Pledge_Form_Pledge',
+    ))) {
+  
+    switch ($formName) {
+      case 'CRM_Member_Form_Membership':
+      case 'CRM_Event_Form_Participant':
+        $isReceiptField = 'send_receipt';
+        break;
+      case 'CRM_Pledge_Form_Pledge':
+        $isReceiptField = 'is_acknowledge';
+        break;
+      case 'CRM_Contribute_Form_Contribution':
+        $isReceiptField = 'is_email_receipt';
+        break;
+    }
+    if (CRM_Utils_Array::value($isReceiptField, $fields) && !CRM_Utils_Array::value('from_email_address', $fields)) {
+      $errors['from_email_address'] = ts('Receipt From is a required field.');
+    }
+  }
+
+  
+
   if (($formName == "CRM_Contribute_Form_ContributionPage_ThankYou" && CRM_Utils_Array::value('is_email_receipt', $fields)) 
     || ($formName == "CRM_Event_Form_ManageEvent_Registration" && CRM_Utils_Array::value('is_email_confirm', $fields))) {
     $config = CRM_Core_Config::singleton();
@@ -76,8 +103,10 @@ function ode_civicrm_validate($formName, &$fields, &$files, &$form) {
     }
     $host = '@'.$matches[1];
     $hostLength = strlen($host);
+    // FIXME
     $email = $fields['receipt_from_email'] ? $fields['receipt_from_email'] : $fields['confirm_from_email'];
     $field = $fields['receipt_from_email'] ? 'receipt_from_email' : 'confirm_from_email';
+    // EOF FIXME
     if (substr($email, -$hostLength) != $host) {
       $errors[$field] = ts('The Outbound Domain Enforcement extension has prevented this From Email Address from being used as it uses a different domain than the System-generated Mail Settings From Email Address configured at Administer > Communications > Organization Address and Contact Info.');
     }
@@ -86,65 +115,54 @@ function ode_civicrm_validate($formName, &$fields, &$files, &$form) {
 }
 
 function ode_civicrm_buildForm($formName, &$form) {
-  if ($formName == "CRM_Contact_Form_Task_Email") {
-    $form->_emails = $emails = array();
+  if (in_array($formName, 
+    array(
+      'CRM_Mailing_Form_Upload', 
+      'CRM_Contact_Form_Task_Email',
+      'CRM_Contribute_Form_Contribution',
+      'CRM_Event_Form_Participant',
+      'CRM_Member_Form_Membership',
+      'CRM_Pledge_Form_Pledge',
+      'CRM_Contribute_Form_Task_Email',
+      'CRM_Event_Form_Task_Email',
+      'CRM_Member_Form_Task_Email',
+    ))) {
 
-    $session = CRM_Core_Session::singleton();
-    $contactID = $session->get('userID');
-
-    $contactEmails = CRM_Core_BAO_Email::allEmails($contactID);
-
-    $fromDisplayName = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact',$contactID, 'display_name');
-
-    foreach ($contactEmails as $emailId => $item) {
-      $email = $item['email'];
-      if (!$email && (count($emails) < 1)) {
-      }
-      else {
-        if ($email) {
-          if (in_array($email, $emails)) {
-            continue;
-          }
-          $emails[$emailId] = '"' . $fromDisplayName . '" <' . $email . '> ';
-        }
-      }
-
-      $form->_emails[$emailId] = $emails[$emailId];
-      $emails[$emailId] .= $item['locationType'];
-
-      if ($item['is_primary']) {
-        $emails[$emailId] .= ' ' . ts('(preferred)');
-      }
-      $emails[$emailId] = htmlspecialchars($emails[$emailId]);
+    $fromField = 'from_email_address';
+    if (in_array($formName, 
+      array(
+        'CRM_Contact_Form_Task_Email',
+        'CRM_Contribute_Form_Task_Email',
+        'CRM_Event_Form_Task_Email',
+        'CRM_Member_Form_Task_Email',
+      ))) {
+      $fromField = 'fromEmailAddress';
     }
-
-    // now add domain from addresses
-    $domainEmails = array();
-    $domainFrom = CRM_Core_OptionGroup::values('from_email_address');
-    foreach (array_keys($domainFrom) as $k) {
-      $domainEmail = $domainFrom[$k];
-      $domainEmails[$domainEmail] = htmlspecialchars($domainEmail);
-    }
-
-    $form->_fromEmails = CRM_Utils_Array::crmArrayMerge($emails, $domainEmails);
-    $form->_fromEmails = suppressEmails($form->_fromEmails);
-    $form->add('select', 'fromEmailAddress', ts('From'), $form->_fromEmails, TRUE);
-  }
-  if ($formName == "CRM_Mailing_Form_Upload") {
-    $fromEmailAddress = CRM_Core_OptionGroup::values('from_email_address');
-    $fromEmailAddress = suppressEmails($fromEmailAddress);
     
-    foreach ($fromEmailAddress as $key => $email) {
-      $fromEmailAddress[$key] = htmlspecialchars($fromEmailAddress[$key]);
+    if (!$form->elementExists($fromField)) {
+      return NULL;
     }
-    $form->add('select', 'from_email_address',
-      ts('From Email Address'), array(
-        '' => '- select -') + $fromEmailAddress, TRUE
-    );
-  }
+    
+    $showNotice = TRUE;
+    if ($form->_flagSubmitted) {
+      $showNotice = FALSE;
+    }
+    
+    $elements = & $form->getElement($fromField);
+    $options = & $elements->_options;
+    suppressEmails($options, $showNotice);
+    
+    if (empty($options)) {
+      $options = array(array(
+        'text' => ts('- Select -'),
+        'attr' => array('value' => ''),
+      ));
+    }
+    $options = array_values($options);
+  }  
 }
 
-function suppressEmails($fromEmailAddress) {
+function suppressEmails(&$fromEmailAddress, $showNotice) {
   $config = CRM_Core_Config::singleton();
   $domain = get_domain($config->userFrameworkBaseURL);
   $details = array();
@@ -155,28 +173,32 @@ function suppressEmails($fromEmailAddress) {
   else {
     preg_match('@^(?:http://)?([^/]+)@i', $domain, $matches);
   }
+  
+  // for testing purpose on local
+  //$matches[1] = 'jmaconsulting.biz';
+  
   $host = '@'.$matches[1];
   $hostLength = strlen($host);
   foreach ($fromEmailAddress as $keys => $headers) {
-    $email = pluckEmailFromHeader(html_entity_decode($headers));
+    $email = pluckEmailFromHeader(html_entity_decode($headers['text']));
     if (substr($email, -$hostLength) != $host) {
       $invalidEmails[] = $email;
       unset($fromEmailAddress[$keys]);
     }
   }
-  if (!empty($invalidEmails)) {
+  
+  if (!empty($invalidEmails) && $showNotice) {
     //redirect user to enter from email address.
     $session = CRM_Core_Session::singleton();
     $message = "";
+    $url = NULL;
     if (empty($fromEmailAddress)) {
       $message = " You can add another one <a href='%2'>here.</a>";
       $url = CRM_Utils_System::url('civicrm/admin/options/from_email_address', 'group=from_email_address&action=add&reset=1');
-      $fromEmailAddress = array('- select -');
     }
     $status = ts('The Outbound Domain Enforcement extension has prevented the following From Email Address option(s) from being used as it uses a different domain than the System-generated Mail Settings From Email Address configured at Administer > Communications > Organization Address and Contact Info: %1'. $message , array( 1=> implode(', ', $invalidEmails), 2=> $url));
     $session->setStatus($status, ts('Notice'));
   }
-  return $fromEmailAddress;
 }
 
 
