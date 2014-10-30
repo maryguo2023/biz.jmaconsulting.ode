@@ -22,6 +22,7 @@ function ode_civicrm_xmlMenu(&$files) {
  * Implementation of hook_civicrm_install
  */
 function ode_civicrm_install() {
+  checkValidEmails();
   return _ode_civix_civicrm_install();
 }
 
@@ -36,6 +37,7 @@ function ode_civicrm_uninstall() {
  * Implementation of hook_civicrm_enable
  */
 function ode_civicrm_enable() {
+  checkValidEmails();
   return _ode_civix_civicrm_enable();
 }
 
@@ -132,7 +134,7 @@ function ode_civicrm_validate($formName, &$fields, &$files, &$form) {
 }
 
 
-function toCheckEmail($email, $field) {
+function toCheckEmail($email, $field, $returnHostName = FALSE) {
   $error = array();
   if (!$email) {
     return $error;
@@ -149,9 +151,12 @@ function toCheckEmail($email, $field) {
   }
 
   // for testing purpose on local
-  //$matches[1] = 'jmaconsulting.biz';
+  // $matches[1] = 'jmaconsulting.biz';
 
   $host = '@' . $matches[1];
+  if ($returnHostName) {
+    return $host;
+  }
   $hostLength = strlen($host);
   if (substr($email, -$hostLength) != $host) {
     $error[$field] = ts('The Outbound Domain Enforcement extension has prevented this From Email Address from being used as it uses a different domain than the System-generated Mail Settings From Email Address configured at Administer > Communications > Organization Address and Contact Info.');
@@ -361,4 +366,62 @@ function get_domain($domain, $debug = false)
  */
 function ode_civicrm_managed(&$entities) {
   return _ode_civix_civicrm_managed($entities);
+}
+
+/*
+ * Function to check from email address are configured correctlly for
+ * 1. Contribution Page
+ * 2. Event Page
+ * 3. Schedule Reminders
+ * 4. Organization Address and Contact Info
+ * 5. If grant application is installed then application page
+ */
+function checkValidEmails() {
+  $getHostName = toCheckEmail('dummy@dummy.com', NULL, TRUE);
+  $queries = array(
+    'Contribution Page(s)' => "SELECT id, title FROM civicrm_contribution_page WHERE is_email_receipt = 1 AND receipt_from_email NOT LIKE '%{$getHostName}'",
+    'Event(s)' => "SELECT id, title FROM civicrm_event WHERE is_email_confirm = 1 AND is_template <> 1 AND confirm_from_email NOT LIKE '%{$getHostName}'",
+    'Schedule Reminder(s)' => "SELECT id, title FROM civicrm_action_schedule WHERE `from_email` NOT LIKE '%{$getHostName}'",
+  );
+
+  $links = array(
+    'Contribution Page(s)' => 'civicrm/admin/contribute/thankyou',
+    'Event(s)' => 'civicrm/event/manage/registration',
+    'Schedule Reminder(s)' => 'civicrm/admin/scheduleReminders',
+  );
+
+  $query = "SELECT id FROM `civicrm_extension` WHERE full_name = 'biz.jmaconsulting.grantapplications' AND is_active <> 1;";
+  $dao = CRM_Core_DAO::executeQuery($query);
+  if ($dao->N) {
+    $queries['Grant Application Page(s)'] = "SELECT id, title FROM civicrm_grant_app_page WHERE is_email_receipt = 1 AND receipt_from_email NOT LIKE '%{$getHostName}'" ;
+    $links['Grant Application Page(s)'] = 'civicrm/admin/grant/thankyou';
+  }
+  
+  $error = array();
+  foreach ($queries as $key => $query) {
+    $dao = CRM_Core_DAO::executeQuery($query);
+    while ($dao->fetch()) {
+      $error[$key][]= "<a target='_blank' href='" . CRM_Utils_System::url($links[$key], "reset=1&action=update&id={$dao->id}") . "'>{$dao->title}</a>";
+    }
+  }
+
+  list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();
+  $hostLength = strlen($getHostName);
+  if (substr($email, -$hostLength) != $getHostName) {
+    $error['Organization Address and Contact Info'][]= "<a target='_blank' href='" . CRM_Utils_System::url('civicrm/admin/domain', 'action=update&reset=1') . "'>Click Here</a>";
+  }
+  
+  if (!empty($error)) {
+    // TODO: add a friendly message
+    $errorMessage = '<ul>';
+    foreach ($error as $title => $links) {
+      $errorMessage .= "<li>$title<ul>";
+      foreach ($links as $link) {
+        $errorMessage .= "<li>$link</li>";
+      } 
+      $errorMessage .= '</ul></li>';
+    }
+    $errorMessage .= '</ul>';
+    CRM_Core_Session::singleton()->setStatus($errorMessage, ts('Notice'));
+  }
 }
