@@ -378,11 +378,22 @@ function ode_civicrm_managed(&$entities) {
  */
 function checkValidEmails() {
   $getHostName = toCheckEmail('dummy@dummy.com', NULL, TRUE);
+  $config = CRM_Core_Config::singleton();
+  if (property_exists($config, 'civiVersion')) {
+    $civiVersion = $config->civiVersion;
+  }
+  else {
+    $civiVersion = CRM_Core_BAO_Domain::version();
+  }
+  
   $queries = array(
     'Contribution Page(s)' => "SELECT id, title FROM civicrm_contribution_page WHERE is_email_receipt = 1 AND receipt_from_email NOT LIKE '%{$getHostName}'",
     'Event(s)' => "SELECT id, title FROM civicrm_event WHERE is_email_confirm = 1 AND is_template <> 1 AND confirm_from_email NOT LIKE '%{$getHostName}'",
-    'Schedule Reminder(s)' => "SELECT id, title FROM civicrm_action_schedule WHERE `from_email` NOT LIKE '%{$getHostName}'",
   );
+
+  if (version_compare('4.5beta1', $civiVersion) <= 0) {
+    $queries['Schedule Reminder(s)'] = "SELECT id, title FROM civicrm_action_schedule WHERE `from_email` NOT LIKE '%{$getHostName}'";
+  }
 
   $links = array(
     'Contribution Page(s)' => 'civicrm/admin/contribute/thankyou',
