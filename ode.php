@@ -91,6 +91,9 @@ function ode_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors
       
       if (CRM_Utils_Array::value($isReceiptField[$formName][0], $fields)) {
         $errors += toCheckEmail(CRM_Utils_Array::value($isReceiptField[$formName][1], $fields), $isReceiptField[$formName][1]);
+        if (!empty($errors)) {
+          $errors[$isReceiptField[$formName][1]] = ts('The Outbound Domain Enforcement extension has prevented this From Email Address from being used as it uses a different domain.');
+        }
       } 
       break;
     
@@ -389,7 +392,7 @@ function checkValidEmails() {
     'Event(s)' => "SELECT id, title FROM civicrm_event WHERE is_email_confirm = 1 AND is_template <> 1 AND confirm_from_email NOT LIKE '%{$getHostName}'",
   );
 
-  if (version_compare('4.5beta1', $civiVersion) <= 0) {
+  if (version_compare('4.5.0', $civiVersion) <= 0) {
     $queries['Schedule Reminder(s)'] = "SELECT id, title FROM civicrm_action_schedule WHERE `from_email` NOT LIKE '%{$getHostName}'";
   }
 
@@ -421,8 +424,7 @@ function checkValidEmails() {
   }
   
   if (!empty($error)) {
-    // TODO: add a friendly message
-    $errorMessage = '<ul>';
+    $errorMessage = 'Please check the following configurations for emails that have an invalid domain name.<ul>';
     foreach ($error as $title => $links) {
       $errorMessage .= "<li>$title<ul>";
       foreach ($links as $link) {
