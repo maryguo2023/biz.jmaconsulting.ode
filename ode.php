@@ -61,8 +61,7 @@ function ode_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
   return _ode_civix_civicrm_upgrade($op, $queue);
 }
 
-function ode_civicrm_validate($formName, &$fields, &$files, &$form) {
-  $errors = array();
+function ode_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
   switch ($formName) {
     case 'CRM_Contribute_Form_Contribution':
     case 'CRM_Event_Form_Participant':
@@ -91,7 +90,7 @@ function ode_civicrm_validate($formName, &$fields, &$files, &$form) {
       );
       
       if (CRM_Utils_Array::value($isReceiptField[$formName][0], $fields)) {
-        $errors = toCheckEmail(CRM_Utils_Array::value($isReceiptField[$formName][1], $fields), $isReceiptField[$formName][1]);
+        $errors += toCheckEmail(CRM_Utils_Array::value($isReceiptField[$formName][1], $fields), $isReceiptField[$formName][1]);
       } 
       break;
     
@@ -100,37 +99,36 @@ function ode_civicrm_validate($formName, &$fields, &$files, &$form) {
       if (!$email) {
         list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();
       }
-      $errors = toCheckEmail($email, 'from_email');
+      $errors += toCheckEmail($email, 'from_email');
       break;
 
     case 'CRM_UF_Form_Group':
       if (CRM_Utils_Array::value('notify', $fields)) {
         list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();
-        $errors = toCheckEmail($email, 'notify');
+        $errors += toCheckEmail($email, 'notify');
       }
       break;
     case 'CRM_Batch_Form_Entry':
       foreach ($fields['field'] as $key => $value) {
         if (CRM_Utils_Array::value('send_receipt', $value)) {
           list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();
-          $errors = toCheckEmail($email, "field[$key][send_receipt]");
+          $errors += toCheckEmail($email, "field[$key][send_receipt]");
           break;          
         }
       }
       break;
       
     case 'CRM_Contact_Form_Domain':
-      $errors = toCheckEmail(CRM_Utils_Array::value('email_address', $fields), 'email_address');      
+      $errors += toCheckEmail(CRM_Utils_Array::value('email_address', $fields), 'email_address');
       break;
 
     case (substr($formName, 0, 16) == 'CRM_Report_Form_' ? TRUE : FALSE) :
       if (CRM_Utils_Array::value('email_to', $fields) || CRM_Utils_Array::value('email_cc', $fields)) {
           list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();        
-          $errors = toCheckEmail($email, 'email_to');
+          $errors += toCheckEmail($email, 'email_to');
       }
       break;
   }
-  return $errors;
 }
 
 
