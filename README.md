@@ -39,11 +39,19 @@ and Contact Info: email.with@different.domain.org, email.with@different.domain2.
 
 NB: Here are the forms that allow users to select From emails that will be filtered and/or validated:
 1. The 3rd step of the CiviMail wizard
-2. Individual emails being sent from Contact Summary page, Actions > Send email, 
-3. Individual emails being sent from Contact Summary page Activities tab, and for new activity select Send an email, 
-4. Search results page, after selecting contacts with emails, changing action to Send Email to Contacts and clicking Go,
-5. Validate From Address fields on create or updates of the Manage Contribution Pages, Thank you and receipting tab,
+2. Individual emails being sent from Contact Summary page, Actions > Send email.
+3. Individual emails being sent from Contact Summary page Activities tab, and for new activity select Send an email. 
+4. Search results page, after selecting contacts with emails, changing action to Send Email to Contacts and clicking Go.
+5. Validate From Address fields on create or updates of the Manage Contribution Pages, Thank you and receipting tab.
 6. Validate From Address fields on Manage Events > Online Registration tab.
+7. If the Grant Application extension is installed, then the From Address fields on the Receipting tab.
+8. From Address field on Add/Edit Schedule Reminder.
+9. If Send Receipt is selected on Batch Entry for Contribution & Batch Entry for Membership.   
+10. When notification emails are selected for Profiles.
+11. When TO and CC emails are selected in email delivery settings.
+12. The Organization Address and Contact Info form
+13. Various backend component creations. registrations, signups etc.
+
 
 Installation
 ============
