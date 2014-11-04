@@ -22,6 +22,7 @@ function ode_civicrm_xmlMenu(&$files) {
  * Implementation of hook_civicrm_install
  */
 function ode_civicrm_install() {
+  checkValidEmails();
   return _ode_civix_civicrm_install();
 }
 
@@ -36,6 +37,7 @@ function ode_civicrm_uninstall() {
  * Implementation of hook_civicrm_enable
  */
 function ode_civicrm_enable() {
+  checkValidEmails();
   return _ode_civix_civicrm_enable();
 }
 
@@ -61,93 +63,85 @@ function ode_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
 
 function ode_civicrm_validate($formName, &$fields, &$files, &$form) {
   $errors = array();
-  if (($formName == "CRM_Contribute_Form_ContributionPage_ThankYou" && CRM_Utils_Array::value('is_email_receipt', $fields)) 
-    || ($formName == "CRM_Event_Form_ManageEvent_Registration" && CRM_Utils_Array::value('is_email_confirm', $fields))) {
-    $config = CRM_Core_Config::singleton();
-    $domain = get_domain($config->userFrameworkBaseURL);
+  switch ($formName) {
+    case 'CRM_Contribute_Form_Contribution':
+    case 'CRM_Event_Form_Participant':
+    case 'CRM_Member_Form_Membership':
+    case 'CRM_Pledge_Form_Pledge':
     
-    $isSSL = CRM_Core_BAO_Setting::getItem('CiviCRM Preferences', 'enableSSL');
-    $details = array();
-    if ($isSSL) { 
-      preg_match('@^(?:https://)?([^/]+)@i', $domain, $matches);
-    }
-    else {
-      preg_match('@^(?:http://)?([^/]+)@i', $domain, $matches);
-    }
-    $host = '@'.$matches[1];
-    $hostLength = strlen($host);
-    $email = $fields['receipt_from_email'] ? $fields['receipt_from_email'] : $fields['confirm_from_email'];
-    $field = $fields['receipt_from_email'] ? 'receipt_from_email' : 'confirm_from_email';
-    if (substr($email, -$hostLength) != $host) {
-      $errors[$field] = ts('The Outbound Domain Enforcement extension has prevented this From Email Address from being used as it uses a different domain than the System-generated Mail Settings From Email Address configured at Administer > Communications > Organization Address and Contact Info.');
-    }
+      $isReceiptField = array(
+        'CRM_Contribute_Form_Contribution' => 'is_email_receipt',
+        'CRM_Event_Form_Participant' => 'send_receipt',
+        'CRM_Member_Form_Membership' => 'send_receipt',
+        'CRM_Pledge_Form_Pledge' => 'is_acknowledge',
+      );
+      
+      if (CRM_Utils_Array::value($isReceiptField[$formName], $fields) && !CRM_Utils_Array::value('from_email_address', $fields)) {
+        $errors['from_email_address'] = ts('Receipt From is a required field.');
+      }
+      break;
+      
+    case 'CRM_Contribute_Form_ContributionPage_ThankYou':
+    case 'CRM_Event_Form_ManageEvent_Registration':
+    case 'CRM_Grant_Form_GrantPage_ThankYou':
+      $isReceiptField = array(
+        'CRM_Contribute_Form_ContributionPage_ThankYou' => array('is_email_receipt', 'receipt_from_email'),
+        'CRM_Grant_Form_GrantPage_ThankYou' => array('is_email_receipt', 'receipt_from_email'),
+        'CRM_Event_Form_ManageEvent_Registration' => array('is_email_confirm', 'confirm_from_email'),
+      );
+      
+      if (CRM_Utils_Array::value($isReceiptField[$formName][0], $fields)) {
+        $errors = toCheckEmail(CRM_Utils_Array::value($isReceiptField[$formName][1], $fields), $isReceiptField[$formName][1]);
+      } 
+      break;
+    
+    case 'CRM_Admin_Form_ScheduleReminders':
+      $email = CRM_Utils_Array::value('from_email', $fields);
+      if (!$email) {
+        list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();
+      }
+      $errors = toCheckEmail($email, 'from_email');
+      break;
+
+    case 'CRM_UF_Form_Group':
+      if (CRM_Utils_Array::value('notify', $fields)) {
+        list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();
+        $errors = toCheckEmail($email, 'notify');
+      }
+      break;
+    case 'CRM_Batch_Form_Entry':
+      foreach ($fields['field'] as $key => $value) {
+        if (CRM_Utils_Array::value('send_receipt', $value)) {
+          list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();
+          $errors = toCheckEmail($email, "field[$key][send_receipt]");
+          break;          
+        }
+      }
+      break;
+      
+    case 'CRM_Contact_Form_Domain':
+      $errors = toCheckEmail(CRM_Utils_Array::value('email_address', $fields), 'email_address');      
+      break;
+
+    case (substr($formName, 0, 16) == 'CRM_Report_Form_' ? TRUE : FALSE) :
+      if (CRM_Utils_Array::value('email_to', $fields) || CRM_Utils_Array::value('email_cc', $fields)) {
+          list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();        
+          $errors = toCheckEmail($email, 'email_to');
+      }
+      break;
   }
   return $errors;
 }
 
-function ode_civicrm_buildForm($formName, &$form) {
-  if ($formName == "CRM_Contact_Form_Task_Email") {
-    $form->_emails = $emails = array();
 
-    $session = CRM_Core_Session::singleton();
-    $contactID = $session->get('userID');
-
-    $contactEmails = CRM_Core_BAO_Email::allEmails($contactID);
-
-    $fromDisplayName = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact',$contactID, 'display_name');
-
-    foreach ($contactEmails as $emailId => $item) {
-      $email = $item['email'];
-      if (!$email && (count($emails) < 1)) {
-      }
-      else {
-        if ($email) {
-          if (in_array($email, $emails)) {
-            continue;
-          }
-          $emails[$emailId] = '"' . $fromDisplayName . '" <' . $email . '> ';
-        }
-      }
-
-      $form->_emails[$emailId] = $emails[$emailId];
-      $emails[$emailId] .= $item['locationType'];
-
-      if ($item['is_primary']) {
-        $emails[$emailId] .= ' ' . ts('(preferred)');
-      }
-      $emails[$emailId] = htmlspecialchars($emails[$emailId]);
-    }
-
-    // now add domain from addresses
-    $domainEmails = array();
-    $domainFrom = CRM_Core_OptionGroup::values('from_email_address');
-    foreach (array_keys($domainFrom) as $k) {
-      $domainEmail = $domainFrom[$k];
-      $domainEmails[$domainEmail] = htmlspecialchars($domainEmail);
-    }
-
-    $form->_fromEmails = CRM_Utils_Array::crmArrayMerge($emails, $domainEmails);
-    $form->_fromEmails = suppressEmails($form->_fromEmails);
-    $form->add('select', 'fromEmailAddress', ts('From'), $form->_fromEmails, TRUE);
+function toCheckEmail($email, $field, $returnHostName = FALSE) {
+  $error = array();
+  if (!$email) {
+    return $error;
   }
-  if ($formName == "CRM_Mailing_Form_Upload") {
-    $fromEmailAddress = CRM_Core_OptionGroup::values('from_email_address');
-    $fromEmailAddress = suppressEmails($fromEmailAddress);
-    
-    foreach ($fromEmailAddress as $key => $email) {
-      $fromEmailAddress[$key] = htmlspecialchars($fromEmailAddress[$key]);
-    }
-    $form->add('select', 'from_email_address',
-      ts('From Email Address'), array(
-        '' => '- select -') + $fromEmailAddress, TRUE
-    );
-  }
-}
-
-function suppressEmails($fromEmailAddress) {
   $config = CRM_Core_Config::singleton();
   $domain = get_domain($config->userFrameworkBaseURL);
-  $details = array();
+    
   $isSSL = CRM_Core_BAO_Setting::getItem('CiviCRM Preferences', 'enableSSL');
   if ($isSSL) { 
     preg_match('@^(?:https://)?([^/]+)@i', $domain, $matches);
@@ -155,28 +149,105 @@ function suppressEmails($fromEmailAddress) {
   else {
     preg_match('@^(?:http://)?([^/]+)@i', $domain, $matches);
   }
-  $host = '@'.$matches[1];
+
+  // for testing purpose on local
+  // $matches[1] = 'jmaconsulting.biz';
+
+  $host = '@' . $matches[1];
+  if ($returnHostName) {
+    return $host;
+  }
+  $hostLength = strlen($host);
+  if (substr($email, -$hostLength) != $host) {
+    $error[$field] = ts('The Outbound Domain Enforcement extension has prevented this From Email Address from being used as it uses a different domain than the System-generated Mail Settings From Email Address configured at Administer > Communications > Organization Address and Contact Info.');
+  }
+  return $error;
+}
+
+function ode_civicrm_buildForm($formName, &$form) {
+  if (in_array($formName, 
+    array(
+      'CRM_Mailing_Form_Upload', 
+      'CRM_Contact_Form_Task_Email',
+      'CRM_Contribute_Form_Contribution',
+      'CRM_Event_Form_Participant',
+      'CRM_Member_Form_Membership',
+      'CRM_Pledge_Form_Pledge',
+      'CRM_Contribute_Form_Task_Email',
+      'CRM_Event_Form_Task_Email',
+      'CRM_Member_Form_Task_Email',
+    ))) {
+
+    $fromField = 'from_email_address';
+    if (in_array($formName, 
+      array(
+        'CRM_Contact_Form_Task_Email',
+        'CRM_Contribute_Form_Task_Email',
+        'CRM_Event_Form_Task_Email',
+        'CRM_Member_Form_Task_Email',
+      ))) {
+      $fromField = 'fromEmailAddress';
+    }
+    
+    if (!$form->elementExists($fromField)) {
+      return NULL;
+    }
+    
+    $showNotice = TRUE;
+    if ($form->_flagSubmitted) {
+      $showNotice = FALSE;
+    }
+    
+    $elements = & $form->getElement($fromField);
+    $options = & $elements->_options;
+    suppressEmails($options, $showNotice);
+    
+    if (empty($options)) {
+      $options = array(array(
+        'text' => ts('- Select -'),
+        'attr' => array('value' => ''),
+      ));
+    }
+    $options = array_values($options);
+  }  
+}
+
+function suppressEmails(&$fromEmailAddress, $showNotice) {
+  $config = CRM_Core_Config::singleton();
+  $domain = get_domain($config->userFrameworkBaseURL);
+  $isSSL = CRM_Core_BAO_Setting::getItem('CiviCRM Preferences', 'enableSSL');
+  if ($isSSL) { 
+    preg_match('@^(?:https://)?([^/]+)@i', $domain, $matches);
+  }
+  else {
+    preg_match('@^(?:http://)?([^/]+)@i', $domain, $matches);
+  }
+  
+  // for testing purpose on local
+  //$matches[1] = 'jmaconsulting.biz';
+
+  $host = '@' . $matches[1];
   $hostLength = strlen($host);
   foreach ($fromEmailAddress as $keys => $headers) {
-    $email = pluckEmailFromHeader(html_entity_decode($headers));
+    $email = pluckEmailFromHeader(html_entity_decode($headers['text']));
     if (substr($email, -$hostLength) != $host) {
       $invalidEmails[] = $email;
       unset($fromEmailAddress[$keys]);
     }
   }
-  if (!empty($invalidEmails)) {
+  
+  if (!empty($invalidEmails) && $showNotice) {
     //redirect user to enter from email address.
     $session = CRM_Core_Session::singleton();
     $message = "";
+    $url = NULL;
     if (empty($fromEmailAddress)) {
       $message = " You can add another one <a href='%2'>here.</a>";
       $url = CRM_Utils_System::url('civicrm/admin/options/from_email_address', 'group=from_email_address&action=add&reset=1');
-      $fromEmailAddress = array('- select -');
     }
     $status = ts('The Outbound Domain Enforcement extension has prevented the following From Email Address option(s) from being used as it uses a different domain than the System-generated Mail Settings From Email Address configured at Administer > Communications > Organization Address and Contact Info: %1'. $message , array( 1=> implode(', ', $invalidEmails), 2=> $url));
     $session->setStatus($status, ts('Notice'));
   }
-  return $fromEmailAddress;
 }
 
 
@@ -295,4 +366,62 @@ function get_domain($domain, $debug = false)
  */
 function ode_civicrm_managed(&$entities) {
   return _ode_civix_civicrm_managed($entities);
+}
+
+/*
+ * Function to check from email address are configured correctlly for
+ * 1. Contribution Page
+ * 2. Event Page
+ * 3. Schedule Reminders
+ * 4. Organization Address and Contact Info
+ * 5. If grant application is installed then application page
+ */
+function checkValidEmails() {
+  $getHostName = toCheckEmail('dummy@dummy.com', NULL, TRUE);
+  $queries = array(
+    'Contribution Page(s)' => "SELECT id, title FROM civicrm_contribution_page WHERE is_email_receipt = 1 AND receipt_from_email NOT LIKE '%{$getHostName}'",
+    'Event(s)' => "SELECT id, title FROM civicrm_event WHERE is_email_confirm = 1 AND is_template <> 1 AND confirm_from_email NOT LIKE '%{$getHostName}'",
+    'Schedule Reminder(s)' => "SELECT id, title FROM civicrm_action_schedule WHERE `from_email` NOT LIKE '%{$getHostName}'",
+  );
+
+  $links = array(
+    'Contribution Page(s)' => 'civicrm/admin/contribute/thankyou',
+    'Event(s)' => 'civicrm/event/manage/registration',
+    'Schedule Reminder(s)' => 'civicrm/admin/scheduleReminders',
+  );
+
+  $query = "SELECT id FROM `civicrm_extension` WHERE full_name = 'biz.jmaconsulting.grantapplications' AND is_active <> 1;";
+  $dao = CRM_Core_DAO::executeQuery($query);
+  if ($dao->N) {
+    $queries['Grant Application Page(s)'] = "SELECT id, title FROM civicrm_grant_app_page WHERE is_email_receipt = 1 AND receipt_from_email NOT LIKE '%{$getHostName}'" ;
+    $links['Grant Application Page(s)'] = 'civicrm/admin/grant/thankyou';
+  }
+  
+  $error = array();
+  foreach ($queries as $key => $query) {
+    $dao = CRM_Core_DAO::executeQuery($query);
+    while ($dao->fetch()) {
+      $error[$key][]= "<a target='_blank' href='" . CRM_Utils_System::url($links[$key], "reset=1&action=update&id={$dao->id}") . "'>{$dao->title}</a>";
+    }
+  }
+
+  list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();
+  $hostLength = strlen($getHostName);
+  if (substr($email, -$hostLength) != $getHostName) {
+    $error['Organization Address and Contact Info'][]= "<a target='_blank' href='" . CRM_Utils_System::url('civicrm/admin/domain', 'action=update&reset=1') . "'>Click Here</a>";
+  }
+  
+  if (!empty($error)) {
+    // TODO: add a friendly message
+    $errorMessage = '<ul>';
+    foreach ($error as $title => $links) {
+      $errorMessage .= "<li>$title<ul>";
+      foreach ($links as $link) {
+        $errorMessage .= "<li>$link</li>";
+      } 
+      $errorMessage .= '</ul></li>';
+    }
+    $errorMessage .= '</ul>';
+    CRM_Core_Session::singleton()->setStatus($errorMessage, ts('Notice'));
+  }
 }
