@@ -455,6 +455,12 @@ function ode_civicrm_pageRun(&$page) {
         $fromEmailAddress[] = $email['text'];
       }
       $suppressEmails['fromAddress'] = $fromEmailAddress;
+      $suppressEmails['mailings'] = array();
+      $suppressEmails['type'] = FALSE;
+      $suppressEmails['fromFields'] = array(
+        'Mailing' => array('fromAddress'),
+        'MailingAB' => array('fromAddressA', 'fromAddressB', 'fromAddress'),
+      );
       
       CRM_Core_Resources::singleton()
         ->addScriptFile('biz.jmaconsulting.ode', 'js/ode_mailing.js')
