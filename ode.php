@@ -390,15 +390,8 @@ function checkValidEmails() {
   else {
     $civiVersion = CRM_Core_BAO_Domain::version();
   }
-  
-  $queries = array(
-    'Contribution Page(s)' => "SELECT id, title FROM civicrm_contribution_page WHERE is_email_receipt = 1 AND receipt_from_email NOT LIKE '%{$getHostName}'",
-    'Event(s)' => "SELECT id, title FROM civicrm_event WHERE is_email_confirm = 1 AND is_template <> 1 AND confirm_from_email NOT LIKE '%{$getHostName}'",
-  );
 
-  if (version_compare('4.5.0', $civiVersion) <= 0) {
-    $queries['Schedule Reminder(s)'] = "SELECT id, title FROM civicrm_action_schedule WHERE `from_email` NOT LIKE '%{$getHostName}'";
-  }
+  $error = array();
 
   $links = array(
     'Contribution Page(s)' => 'civicrm/admin/contribute/thankyou',
@@ -406,18 +399,56 @@ function checkValidEmails() {
     'Schedule Reminder(s)' => 'civicrm/admin/scheduleReminders',
   );
 
-  $query = "SELECT id FROM `civicrm_extension` WHERE full_name = 'biz.jmaconsulting.grantapplications' AND is_active <> 1;";
-  $dao = CRM_Core_DAO::executeQuery($query);
-  if ($dao->N) {
-    $queries['Grant Application Page(s)'] = "SELECT id, title FROM civicrm_grant_app_page WHERE is_email_receipt = 1 AND receipt_from_email NOT LIKE '%{$getHostName}'" ;
-    $links['Grant Application Page(s)'] = 'civicrm/admin/grant/thankyou';
+  // Contribution Pages.
+  $contributionPageParams = array(
+    'is_email_receipt' => 1,
+    'receipt_from_email' => array("NOT LIKE" => "'%{$getHostName}'"),
+    'return' => array('id', 'title'),
+  );
+  $result = civicrm_api3('contribution_page', 'get', $contributionPageParams);
+  if ($result['count'] > 0) {
+    foreach ($result['values'] as $values) {
+      $error['Contribution Page(s)'][] = "<a target='_blank' href='" . CRM_Utils_System::url($links['Contribution Page(s)'], "reset=1&action=update&id={$values['id']}") . "'>{$values['title']}</a>";
+    }
   }
   
-  $error = array();
-  foreach ($queries as $key => $query) {
-    $dao = CRM_Core_DAO::executeQuery($query);
+  // Events.
+  $eventParams = array(
+    'is_email_confirm' => 1,
+    'is_template' => array("<>" => 1),
+    'confirm_from_email' => array("NOT LIKE" => "'%{$getHostName}'"),
+    'return' => array('id', 'title'),
+  );
+  $result = civicrm_api3('event', 'get', $eventParams);
+  if ($result['count'] > 0) {
+    foreach ($result['values'] as $values) {
+      $error['Event(s)'][] = "<a target='_blank' href='" . CRM_Utils_System::url($links['Event(s)'], "reset=1&action=update&id={$values['id']}") . "'>{$values['title']}</a>";
+    }
+  }
+
+  // Schedule Reminders.
+  if (version_compare('4.5.0', $civiVersion) <= 0) {
+    $dao = CRM_Core_DAO::executeQuery("SELECT id, title FROM civicrm_action_schedule WHERE `from_email` NOT LIKE '%{$getHostName}'");
     while ($dao->fetch()) {
-      $error[$key][]= "<a target='_blank' href='" . CRM_Utils_System::url($links[$key], "reset=1&action=update&id={$dao->id}") . "'>{$dao->title}</a>";
+      $error['Schedule Reminder(s)'][]= "<a target='_blank' href='" . CRM_Utils_System::url($links['Schedule Reminder(s)'], "reset=1&action=update&id={$dao->id}") . "'>{$dao->title}</a>";
+    }
+  }
+
+  // Grant Application Pages.
+  $query = "SELECT id FROM `civicrm_extension` WHERE full_name = 'biz.jmaconsulting.grantapplications' AND is_active = 1;";
+  $dao = CRM_Core_DAO::executeQuery($query);
+  if ($dao->N) {
+    $links['Grant Application Page(s)'] = 'civicrm/admin/grant/thankyou';
+    $grantAppParams = array(
+      'is_email_receipt' => 1,
+      'receipt_from_email' => array("NOT LIKE" => "'%{$getHostName}'"),
+      'return' => array('id', 'title'),
+    );
+    $result = civicrm_api3('grant_application_page', 'get', $grantAppParams);
+    if ($result['count'] > 0) {
+      foreach ($result['values'] as $values) {
+        $error['Grant Application Page(s)'][] = "<a target='_blank' href='" . CRM_Utils_System::url($links['Grant Application Page(s)'], "reset=1&action=update&id={$values['id']}") . "'>{$values['title']}</a>";
+      }
     }
   }
 
