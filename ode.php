@@ -227,13 +227,35 @@ function ode_suppressEmails(&$fromEmailAddress, $showNotice) {
   // for testing purpose on local
   //$matches[1] = 'jmaconsulting.biz';
 
+  $odeSettings = Civi::settings()->get('ode_settings');
+  if (CRM_Utils_Array::value('ode_from_allowed', $odeSettings)) {
+    // Allow domains configured in 'From' admin settings.
+    // The main objective of this setting is to bypass emails that have been whitelisted and have SPF in place.
+    $fromAdminEmails = CRM_Core_OptionGroup::values('from_email_address');
+    $domainEmails = array();
+
+    foreach ($fromAdminEmails as $key => $val) {
+      if (preg_match('/<([^>]+)>/', $val, $matches)) {
+        $domainEmails[] = $matches[1];
+      }
+    }
+  }
+
   $host = '@' . $matches[1];
   $hostLength = strlen($host);
   foreach ($fromEmailAddress as $keys => $headers) {
     $email = pluckEmailFromHeader(html_entity_decode($headers['text']));
-    if (substr($email, -$hostLength) != $host) {
-      $invalidEmails[] = $email;
-      unset($fromEmailAddress[$keys]);
+    if (empty($domainEmails)) {
+      if (substr($email, -$hostLength) != $host) {
+        $invalidEmails[] = $email;
+        unset($fromEmailAddress[$keys]);
+      }
+    }
+    else {
+      if ((!in_array($email, $domainEmails)) && (substr($email, -$hostLength) != $host)) {
+        $invalidEmails[] = $email;
+        unset($fromEmailAddress[$keys]);
+      }
     }
   }
   
@@ -370,6 +392,22 @@ function get_domain($domain, $debug = false)
  * is installed, disabled, uninstalled.
  */
 function ode_civicrm_managed(&$entities) {
+  $entities[] = array(
+    'module' => 'biz.jmaconsulting.ode',
+    'name' => 'navigation',
+    'update' => 'never',
+    'entity' => 'Navigation',
+    'params' => array(
+      'label' => "ODE Preferences",
+      'name' => "ode_settings",
+      'url' => "civicrm/ode/settings?reset=1",
+      'parent_id' => "Communications",
+      'permission' => "administer CiviCRM",
+      'has_separator' => 1,
+      'is_active' => 1,
+      'version' => 3,
+    ),
+  );
   return _ode_civix_civicrm_managed($entities);
 }
 
