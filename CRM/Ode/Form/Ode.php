@@ -29,7 +29,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright JMA Consulting (c) 2015-2016
  * $Id$
  *
  */
