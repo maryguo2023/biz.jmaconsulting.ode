@@ -227,11 +227,11 @@ function ode_suppressEmails(&$fromEmailAddress, $showNotice) {
   // for testing purpose on local
   //$matches[1] = 'jmaconsulting.biz';
 
+  $domainEmails = $invalidEmails = array();
   if (Civi::settings()->get('ode_from_allowed')) {
     // Allow domains configured in 'From' admin settings.
     // The main objective of this setting is to bypass emails that have been whitelisted and have SPF in place.
     $fromAdminEmails = CRM_Core_OptionGroup::values('from_email_address');
-    $domainEmails = array();
 
     foreach ($fromAdminEmails as $key => $val) {
       if (preg_match('/<([^>]+)>/', $val, $matches)) {
