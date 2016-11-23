@@ -54,15 +54,13 @@ class CRM_Ode_Form_Ode extends CRM_Core_Form {
   }
 
   function setDefaultValues() {
-    $defaults = Civi::settings()->get('ode_settings');
+    $defaults['ode_from_allowed'] = Civi::settings()->get('ode_from_allowed');
     return $defaults;
   }
 
   function postProcess() {
     $params = $this->controller->exportValues($this->_name);
-    unset($params['qfKey']);
-    unset($params['entryURL']);
-    Civi::settings()->set('ode_settings', $params);
+    Civi::settings()->set('ode_from_allowed', CRM_Utils_Array::value('ode_from_allowed', $params));
   }
 
 }
