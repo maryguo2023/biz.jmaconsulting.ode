@@ -34,7 +34,7 @@
  *
  */
 
-class CRM_Ode_Form_Ode extends CRM_Core_Form {
+class CRM_Ode_Form_Ode extends CRM_Admin_Form_Setting {
 
   function buildQuickForm() {
     $this->addYesNo('ode_from_allowed', ts('Whitelist FROM email addresses?'), NULL);
@@ -61,6 +61,7 @@ class CRM_Ode_Form_Ode extends CRM_Core_Form {
   function postProcess() {
     $params = $this->controller->exportValues($this->_name);
     Civi::settings()->set('ode_from_allowed', CRM_Utils_Array::value('ode_from_allowed', $params));
+    CRM_Core_Session::setStatus(ts('ODE Settings has been saved.'), ts('Saved'), 'success');
   }
 
 }
