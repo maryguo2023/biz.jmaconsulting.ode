@@ -54,13 +54,13 @@ class CRM_Ode_Form_Ode extends CRM_Admin_Form_Setting {
   }
 
   function setDefaultValues() {
-    $defaults['ode_from_allowed'] = Civi::settings()->get('ode_from_allowed');
+    $defaults['ode_from_allowed'] = ode_get_settings_value();
     return $defaults;
   }
 
   function postProcess() {
     $params = $this->controller->exportValues($this->_name);
-    Civi::settings()->set('ode_from_allowed', CRM_Utils_Array::value('ode_from_allowed', $params));
+    ode_set_settings_value(CRM_Utils_Array::value('ode_from_allowed', $params));
     CRM_Core_Session::setStatus(ts('ODE Settings has been saved.'), ts('Saved'), 'success');
   }
 

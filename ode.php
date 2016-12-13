@@ -228,7 +228,7 @@ function ode_suppressEmails(&$fromEmailAddress, $showNotice) {
   //$matches[1] = 'jmaconsulting.biz';
 
   $domainEmails = $invalidEmails = array();
-  if (Civi::settings()->get('ode_from_allowed')) {
+  if (ode_get_settings_value()) {
     // Allow domains configured in 'From' admin settings.
     // The main objective of this setting is to bypass emails that have been whitelisted and have SPF in place.
     $fromAdminEmails = CRM_Core_OptionGroup::values('from_email_address');
@@ -384,31 +384,26 @@ function get_domain($domain, $debug = false)
 	return join('.', $arr);
 }
 
+
 /**
- * Implementation of hook_civicrm_managed
+ * This hook allows modification of the navigation menu.
  *
- * Generate a list of entities to create/deactivate/delete when this module
- * is installed, disabled, uninstalled.
+ * @param array $params
+ *   Associated array of navigation menu entry to Modify/Add
+ *
+ * @return mixed
  */
-function ode_civicrm_managed(&$entities) {
-  $entities[] = array(
-    'module' => 'biz.jmaconsulting.ode',
-    'name' => 'navigation',
-    'update' => 'never',
-    'entity' => 'Navigation',
-    'params' => array(
-      'label' => "ODE Preferences",
-      'name' => "ode_settings",
-      'url' => "civicrm/ode/settings?reset=1",
-      'parent_id' => "Communications",
-      'permission' => "administer CiviCRM",
-      'has_separator' => 1,
-      'is_active' => 1,
-      'version' => 3,
-    ),
-  );
-  return _ode_civix_civicrm_managed($entities);
-}
+function ode_civicrm_navigationMenu(&$menu) {
+  _ode_civix_insert_navigation_menu($menu, 'Administer/Communications', array(
+    'label' => ts('ODE Preferences', array('domain' => 'biz.jmaconsulting.ode')),
+    'name' => 'ode_settings',
+    'url' => 'civicrm/ode/settings?reset=1',
+    'permission' => 'administer CiviCRM',
+    'operator' => 'AND',
+    'separator' => 1,
+  ));
+  _ode_civix_navigationMenu($menu);
+  }
 
 /*
  * Function to check from email address are configured correctlly for
@@ -537,3 +532,46 @@ function ode_civicrm_pageRun(&$page) {
   }
 }
 
+/*
+ * Function to get settings value for ode_from_allowed
+ *
+ */
+function ode_get_settings_value() {
+  $config = CRM_Core_Config::singleton();
+  if (property_exists($config, 'civiVersion')) {
+    $civiVersion = $config->civiVersion;
+  }
+  else {
+    $civiVersion = CRM_Core_BAO_Domain::version();
+  }
+  if (version_compare('4.7alpha1', $civiVersion) > 0) {
+    $value = CRM_Core_BAO_Setting::getItem(NULL, 'ode_from_allowed');
+  }
+  else {
+    $value = Civi::settings()->get('ode_from_allowed');
+  }
+  return $value;
+}
+
+/*
+ * Function to set settings value for ode_from_allowed
+ *
+ */
+function ode_set_settings_value($settingValue) {
+  $config = CRM_Core_Config::singleton();
+  if (property_exists($config, 'civiVersion')) {
+    $civiVersion = $config->civiVersion;
+  }
+  else {
+    $civiVersion = CRM_Core_BAO_Domain::version();
+  }
+  if (version_compare('4.7alpha1', $civiVersion) > 0) {
+    CRM_Core_BAO_Setting::setItem($settingValue,
+      NULL,
+      'ode_from_allowed'
+    );
+  }
+  else {
+    $value = Civi::settings()->set('ode_from_allowed', $settingValue);
+  }
+}
