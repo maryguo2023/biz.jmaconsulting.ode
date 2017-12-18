@@ -55,6 +55,9 @@ function ode_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
   return _ode_civix_civicrm_upgrade($op, $queue);
 }
 
+/**
+*  Implements hook_civicrm_validateForm().
+*/
 function ode_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
   switch ($formName) {
     case 'CRM_Contribute_Form_Contribution':
@@ -129,7 +132,15 @@ function ode_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors
   }
 }
 
-
+/**
+* Function to check email address with domain.
+*
+* @param string $email
+* @param string $field
+* @param bool $returnHostName
+*
+* @return array|bool
+*/
 function toCheckEmail($email, $field, $returnHostName = FALSE) {
   $error = array();
   if (!$email) {
@@ -160,6 +171,9 @@ function toCheckEmail($email, $field, $returnHostName = FALSE) {
   return $error;
 }
 
+/**
+*  Implements hook_civicrm_buildForm().
+*/
 function ode_civicrm_buildForm($formName, &$form) {
   if (in_array($formName,
     array(
@@ -210,6 +224,14 @@ function ode_civicrm_buildForm($formName, &$form) {
   }
 }
 
+/**
+* Function to supress email address.
+*
+* @param array $fromEmailAddress
+* @param bool $showNotice
+*
+* @return array|NULL
+*/
 function ode_suppressEmails(&$fromEmailAddress, $showNotice) {
   $config = CRM_Core_Config::singleton();
   $domain = get_domain($config->userFrameworkBaseURL);
@@ -273,7 +295,13 @@ function ode_suppressEmails(&$fromEmailAddress, $showNotice) {
   return NULL;
 }
 
-
+/**
+* Function to pluck email address from header.
+*
+* @param array $header
+*
+* @return string|NULL
+*/
 function pluckEmailFromHeader($header) {
   preg_match('/<([^<]*)>/', $header, $matches);
 
@@ -283,6 +311,14 @@ function pluckEmailFromHeader($header) {
   return NULL;
 }
 
+/**
+* Function to get domain.
+*
+* @param string $domain
+* @param bool $debug
+*
+* @return string|bool
+*/
 function get_domain($domain, $debug = FALSE) {
   $original = $domain = strtolower($domain);
 
@@ -374,9 +410,8 @@ function get_domain($domain, $debug = FALSE) {
 
 
 /**
- * This hook allows modification of the navigation menu.
+ * Implements hook_civicrm_navigationMenu().
  *
- * @return mixed
  */
 function ode_civicrm_navigationMenu(&$menu) {
   _ode_civix_insert_navigation_menu($menu, 'Administer/Communications', array(
@@ -490,8 +525,9 @@ function checkValidEmails() {
 }
 
 /**
- * Function to get settings value for ode_from_allowed
+ * Function to get settings value for ode_from_allowed.
  *
+ * @return string
  */
 function ode_get_settings_value() {
   $config = CRM_Core_Config::singleton();
@@ -511,7 +547,9 @@ function ode_get_settings_value() {
 }
 
 /**
- * Function to set settings value for ode_from_allowed
+ * Function to set settings value for ode_from_allowed.
+ *
+ * @param string $settingValue
  *
  */
 function ode_set_settings_value($settingValue) {
