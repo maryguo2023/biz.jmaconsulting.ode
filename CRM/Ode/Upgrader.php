@@ -46,7 +46,7 @@ class CRM_Ode_Upgrader extends CRM_Ode_Upgrader_Base {
     $this->ctx->log->info('Applying update 1');
     checkValidEmails();
     return TRUE;
-  } 
+  }
 
 
   /**

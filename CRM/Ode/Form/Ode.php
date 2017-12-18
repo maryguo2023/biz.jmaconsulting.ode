@@ -33,10 +33,9 @@
  * $Id$
  *
  */
-
 class CRM_Ode_Form_Ode extends CRM_Admin_Form_Setting {
 
-  function buildQuickForm() {
+  public function buildQuickForm() {
     $this->addYesNo('ode_from_allowed', ts('Whitelist FROM email addresses?'), NULL);
 
     $this->addButtons(array(
@@ -53,12 +52,12 @@ class CRM_Ode_Form_Ode extends CRM_Admin_Form_Setting {
     parent::buildQuickForm();
   }
 
-  function setDefaultValues() {
+  public function setDefaultValues() {
     $defaults['ode_from_allowed'] = ode_get_settings_value();
     return $defaults;
   }
 
-  function postProcess() {
+  public function postProcess() {
     $params = $this->controller->exportValues($this->_name);
     ode_set_settings_value(CRM_Utils_Array::value('ode_from_allowed', $params));
     CRM_Core_Session::setStatus(ts('ODE Settings has been saved.'), ts('Saved'), 'success');
