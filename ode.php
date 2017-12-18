@@ -504,34 +504,6 @@ function checkValidEmails() {
   }
 }
 
-function ode_civicrm_pageRun(&$page) {
-  if ($page->getVar('_name') == 'Civi\Angular\Page\Main') {
-    $domainFrom = CRM_Core_OptionGroup::values('from_email_address');
-    foreach ($domainFrom as $email) {
-      $domainEmails[] = array('text' => $email);
-    }
-    
-    $suppressEmails = ode_suppressEmails($domainEmails, 'returnMessage');
-    if ($suppressEmails) {
-      $fromEmailAddress = array();
-      foreach ($domainEmails as $email) {
-        $fromEmailAddress[] = $email['text'];
-      }
-      $suppressEmails['fromAddress'] = $fromEmailAddress;
-      $suppressEmails['mailings'] = array();
-      $suppressEmails['type'] = FALSE;
-      $suppressEmails['fromFields'] = array(
-        'Mailing' => array('fromAddress'),
-        'MailingAB' => array('fromAddressA', 'fromAddressB', 'fromAddress'),
-      );
-      
-      CRM_Core_Resources::singleton()
-        ->addScriptFile('biz.jmaconsulting.ode', 'js/ode_mailing.js')
-        ->addVars('odevariables', $suppressEmails);
-    }
-  }
-}
-
 /*
  * Function to get settings value for ode_from_allowed
  *
@@ -573,5 +545,25 @@ function ode_set_settings_value($settingValue) {
   }
   else {
     $value = Civi::settings()->set('ode_from_allowed', $settingValue);
+  }
+}
+
+/**
+ * Implementation of hook_civicrm_apiWrappers
+ *
+ */
+function ode_civicrm_apiWrappers(&$wrappers, $apiRequest) {
+  if ($apiRequest['entity'] == 'OptionValue' && $apiRequest['action'] == 'get') {
+    $optionGroupId = civicrm_api3('OptionGroup', 'getvalue', array(
+      'return' => "id",
+      'name' => "from_email_address",
+    ));
+    $optionGroup = CRM_Utils_Array::value(
+      'option_group_id',
+      CRM_Utils_Array::value('params', $apiRequest)
+    );
+    if (in_array($optionGroup, array($optionGroupId, 'from_email_address'))) {
+      $wrappers[] = new CRM_Ode_OdeAPIWrapper();
+    }
   }
 }
