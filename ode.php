@@ -489,7 +489,7 @@ function checkValidEmails() {
   }
 }
 
-/*
+/**
  * Function to get settings value for ode_from_allowed
  *
  */
@@ -510,7 +510,7 @@ function ode_get_settings_value() {
   return $value;
 }
 
-/*
+/**
  * Function to set settings value for ode_from_allowed
  *
  */
