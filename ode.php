@@ -1,4 +1,4 @@
-print (<?php
+<?php
 
 require_once 'ode.civix.php';
 
@@ -290,7 +290,7 @@ function get_domain($domain, $debug = FALSE) {
     return $domain;
   }
 
-  $debug ? print ('<strong style="color:green">&raquo;</strong> Parsing: '.$original) : FALSE;
+  $debug ? print ('<strong style="color:green">&raquo;</strong> Parsing: ' . $original) : FALSE;
 
   $arr = array_slice(array_filter(explode('.', $domain, 4), function($value) {
     return $value !== 'www';
@@ -315,7 +315,7 @@ function get_domain($domain, $debug = FALSE) {
       if (strlen($_sub[0]) === 2 && $count === 3) {// TLD domain must be 2 letters
         array_unshift($arr, $removed);
       }
-      else{
+      else {
         // non country TLD according to IANA
         $tlds = array(
           'aero',
@@ -359,8 +359,8 @@ function get_domain($domain, $debug = FALSE) {
     $arr0 = array_shift($arr);
 
     if (strpos(implode('.', $arr), '.') === FALSE
-      && in_array($arr[0], array('localhost','test','invalid')) === FALSE
-    ) { // not a reserved domain
+      && in_array($arr[0], array('localhost', 'test', 'invalid')) === FALSE
+    ) {// not a reserved domain
       $debug ? print ("<br>\n" . 'Seems invalid domain: <strong>' . implode('.', $arr) . '</strong> re-adding: <strong>' . $arr0 . '</strong> ') : FALSE;
       // seems invalid domain, restore it
       array_unshift($arr, $arr0);
@@ -390,7 +390,7 @@ function ode_civicrm_navigationMenu(&$menu) {
   _ode_civix_navigationMenu($menu);
 }
 
-/*
+/**
  * Function to check from email address are configured correctlly for
  * 1. Contribution Page
  * 2. Event Page
@@ -447,7 +447,7 @@ function checkValidEmails() {
   if (version_compare('4.5.0', $civiVersion) <= 0) {
     $dao = CRM_Core_DAO::executeQuery("SELECT id, title FROM civicrm_action_schedule WHERE `from_email` NOT LIKE '%{$getHostName}'");
     while ($dao->fetch()) {
-      $error['Schedule Reminder(s)'][]= "<a target='_blank' href='" . CRM_Utils_System::url($links['Schedule Reminder(s)'], "reset=1&action=update&id={$dao->id}") . "'>{$dao->title}</a>";
+      $error['Schedule Reminder(s)'][] = "<a target='_blank' href='" . CRM_Utils_System::url($links['Schedule Reminder(s)'], "reset=1&action=update&id={$dao->id}") . "'>{$dao->title}</a>";
     }
   }
 
@@ -472,7 +472,7 @@ function checkValidEmails() {
   list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();
   $hostLength = strlen($getHostName);
   if (substr($email, -$hostLength) != $getHostName) {
-    $error['Organization Address and Contact Info'][]= "<a target='_blank' href='" . CRM_Utils_System::url('civicrm/admin/domain', 'action=update&reset=1') . "'>Click Here</a>";
+    $error['Organization Address and Contact Info'][] = "<a target='_blank' href='" . CRM_Utils_System::url('civicrm/admin/domain', 'action=update&reset=1') . "'>Click Here</a>";
   }
 
   if (!empty($error)) {
