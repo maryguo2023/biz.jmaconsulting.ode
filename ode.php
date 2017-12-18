@@ -3,23 +3,22 @@
 require_once 'ode.civix.php';
 
 /**
- * Implementation of hook_civicrm_config
+ * Implements hook_civicrm_config().
  */
 function ode_civicrm_config(&$config) {
   _ode_civix_civicrm_config($config);
 }
 
 /**
- * Implementation of hook_civicrm_xmlMenu
+ * Implements hook_civicrm_xmlMenu().
  *
- * @param $files array(string)
  */
 function ode_civicrm_xmlMenu(&$files) {
   _ode_civix_civicrm_xmlMenu($files);
 }
 
 /**
- * Implementation of hook_civicrm_install
+ * Implements hook_civicrm_install().
  */
 function ode_civicrm_install() {
   checkValidEmails();
@@ -27,14 +26,14 @@ function ode_civicrm_install() {
 }
 
 /**
- * Implementation of hook_civicrm_uninstall
+ * Implements hook_civicrm_uninstall().
  */
 function ode_civicrm_uninstall() {
   return _ode_civix_civicrm_uninstall();
 }
 
 /**
- * Implementation of hook_civicrm_enable
+ * Implements hook_civicrm_enable().
  */
 function ode_civicrm_enable() {
   checkValidEmails();
@@ -42,20 +41,15 @@ function ode_civicrm_enable() {
 }
 
 /**
- * Implementation of hook_civicrm_disable
+ * Implements hook_civicrm_disable().
  */
 function ode_civicrm_disable() {
   return _ode_civix_civicrm_disable();
 }
 
 /**
- * Implementation of hook_civicrm_upgrade
+ * Implements hook_civicrm_upgrade().
  *
- * @param $op string, the type of operation being performed; 'check' or 'enqueue'
- * @param $queue CRM_Queue_Queue, (for 'enqueue') the modifiable list of pending up upgrade tasks
- *
- * @return mixed  based on op. for 'check', returns array(boolean) (TRUE if upgrades are pending)
- *                for 'enqueue', returns void
  */
 function ode_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
   return _ode_civix_civicrm_upgrade($op, $queue);
@@ -67,19 +61,19 @@ function ode_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors
     case 'CRM_Event_Form_Participant':
     case 'CRM_Member_Form_Membership':
     case 'CRM_Pledge_Form_Pledge':
-    
+
       $isReceiptField = array(
         'CRM_Contribute_Form_Contribution' => 'is_email_receipt',
         'CRM_Event_Form_Participant' => 'send_receipt',
         'CRM_Member_Form_Membership' => 'send_receipt',
         'CRM_Pledge_Form_Pledge' => 'is_acknowledge',
       );
-      
+
       if (CRM_Utils_Array::value($isReceiptField[$formName], $fields) && !CRM_Utils_Array::value('from_email_address', $fields)) {
         $errors['from_email_address'] = ts('Receipt From is a required field.');
       }
       break;
-      
+
     case 'CRM_Contribute_Form_ContributionPage_ThankYou':
     case 'CRM_Event_Form_ManageEvent_Registration':
     case 'CRM_Grant_Form_GrantPage_ThankYou':
@@ -88,15 +82,15 @@ function ode_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors
         'CRM_Grant_Form_GrantPage_ThankYou' => array('is_email_receipt', 'receipt_from_email'),
         'CRM_Event_Form_ManageEvent_Registration' => array('is_email_confirm', 'confirm_from_email'),
       );
-      
+
       if (CRM_Utils_Array::value($isReceiptField[$formName][0], $fields)) {
         $errors += toCheckEmail(CRM_Utils_Array::value($isReceiptField[$formName][1], $fields), $isReceiptField[$formName][1]);
         if (!empty($errors)) {
           $errors[$isReceiptField[$formName][1]] = ts('The Outbound Domain Enforcement extension has prevented this From Email Address from being used as it uses a different domain.');
         }
-      } 
+      }
       break;
-    
+
     case 'CRM_Admin_Form_ScheduleReminders':
       $email = CRM_Utils_Array::value('from_email', $fields);
       if (!$email) {
@@ -116,18 +110,18 @@ function ode_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors
         if (CRM_Utils_Array::value('send_receipt', $value)) {
           list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();
           $errors += toCheckEmail($email, "field[$key][send_receipt]");
-          break;          
+          break;
         }
       }
       break;
-      
+
     case 'CRM_Contact_Form_Domain':
       $errors += toCheckEmail(CRM_Utils_Array::value('email_address', $fields), 'email_address');
       break;
 
     case (substr($formName, 0, 16) == 'CRM_Report_Form_' ? TRUE : FALSE) :
       if (CRM_Utils_Array::value('email_to', $fields) || CRM_Utils_Array::value('email_cc', $fields)) {
-          list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();        
+          list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();
           $errors += toCheckEmail($email, 'email_to');
       }
       break;
@@ -142,9 +136,9 @@ function toCheckEmail($email, $field, $returnHostName = FALSE) {
   }
   $config = CRM_Core_Config::singleton();
   $domain = get_domain($config->userFrameworkBaseURL);
-    
+
   $isSSL = CRM_Core_BAO_Setting::getItem('CiviCRM Preferences', 'enableSSL');
-  if ($isSSL) { 
+  if ($isSSL) {
     preg_match('@^(?:https://)?([^/]+)@i', $domain, $matches);
   }
   else {
@@ -166,9 +160,9 @@ function toCheckEmail($email, $field, $returnHostName = FALSE) {
 }
 
 function ode_civicrm_buildForm($formName, &$form) {
-  if (in_array($formName, 
+  if (in_array($formName,
     array(
-      'CRM_Mailing_Form_Upload', 
+      'CRM_Mailing_Form_Upload',
       'CRM_Contact_Form_Task_Email',
       'CRM_Contribute_Form_Contribution',
       'CRM_Event_Form_Participant',
@@ -180,7 +174,7 @@ function ode_civicrm_buildForm($formName, &$form) {
     ))) {
 
     $fromField = 'from_email_address';
-    if (in_array($formName, 
+    if (in_array($formName,
       array(
         'CRM_Contact_Form_Task_Email',
         'CRM_Contribute_Form_Task_Email',
@@ -189,20 +183,20 @@ function ode_civicrm_buildForm($formName, &$form) {
       ))) {
       $fromField = 'fromEmailAddress';
     }
-    
+
     if (!$form->elementExists($fromField)) {
       return NULL;
     }
-    
+
     $showNotice = TRUE;
     if ($form->_flagSubmitted) {
       $showNotice = FALSE;
     }
-    
+
     $elements = & $form->getElement($fromField);
     $options = & $elements->_options;
     ode_suppressEmails($options, $showNotice);
-    
+
     if (empty($options)) {
       $options = array(array(
         'text' => ts('- Select -'),
@@ -210,20 +204,20 @@ function ode_civicrm_buildForm($formName, &$form) {
       ));
     }
     $options = array_values($options);
-  }  
+  }
 }
 
 function ode_suppressEmails(&$fromEmailAddress, $showNotice) {
   $config = CRM_Core_Config::singleton();
   $domain = get_domain($config->userFrameworkBaseURL);
   $isSSL = CRM_Core_BAO_Setting::getItem('CiviCRM Preferences', 'enableSSL');
-  if ($isSSL) { 
+  if ($isSSL) {
     preg_match('@^(?:https://)?([^/]+)@i', $domain, $matches);
   }
   else {
     preg_match('@^(?:http://)?([^/]+)@i', $domain, $matches);
   }
-  
+
   // for testing purpose on local
   //$matches[1] = 'jmaconsulting.biz';
 
@@ -257,7 +251,7 @@ function ode_suppressEmails(&$fromEmailAddress, $showNotice) {
       }
     }
   }
-  
+
   if (!empty($invalidEmails) && $showNotice) {
     //redirect user to enter from email address.
     $session = CRM_Core_Session::singleton();
@@ -279,7 +273,7 @@ function ode_suppressEmails(&$fromEmailAddress, $showNotice) {
 
 function pluckEmailFromHeader($header) {
   preg_match('/<([^<]*)>/', $header, $matches);
-  
+
   if (isset($matches[1])) {
     return $matches[1];
   }
@@ -289,22 +283,22 @@ function pluckEmailFromHeader($header) {
 function get_domain($domain, $debug = false)
 {
 	$original = $domain = strtolower($domain);
- 
+
 	if (filter_var($domain, FILTER_VALIDATE_IP)) { return $domain; }
- 
+
 	$debug ? print('<strong style="color:green">&raquo;</strong> Parsing: '.$original) : false;
- 
+
 	$arr = array_slice(array_filter(explode('.', $domain, 4), function($value){
 		return $value !== 'www';
 	}), 0); //rebuild array indexes
- 
+
 	if (count($arr) > 2)
 	{
 		$count = count($arr);
 		$_sub = explode('.', $count === 4 ? $arr[3] : $arr[2]);
- 
+
 		$debug ? print(" (parts count: {$count})") : false;
- 
+
 		if (count($_sub) === 2) // two level TLD
 		{
 			$removed = array_shift($arr);
@@ -317,7 +311,7 @@ function get_domain($domain, $debug = false)
 		elseif (count($_sub) === 1) // one level TLD
 		{
 			$removed = array_shift($arr); //remove the subdomain
- 
+
 			if (strlen($_sub[0]) === 2 && $count === 3) // TLD domain must be 2 letters
 			{
 				array_unshift($arr, $removed);
@@ -349,7 +343,7 @@ function get_domain($domain, $debug = false)
 					'travel',
 					'xxx',
 				);
- 
+
 				if (count($arr) > 2 && in_array($_sub[0], $tlds) !== false) //special TLD don't have a country
 				{
 					array_shift($arr);
@@ -369,7 +363,7 @@ function get_domain($domain, $debug = false)
 	elseif (count($arr) === 2)
 	{
 		$arr0 = array_shift($arr);
- 
+
 		if (strpos(join('.', $arr), '.') === false
 			&& in_array($arr[0], array('localhost','test','invalid')) === false) // not a reserved domain
 		{
@@ -378,9 +372,9 @@ function get_domain($domain, $debug = false)
 			array_unshift($arr, $arr0);
 		}
 	}
- 
+
 	$debug ? print("<br>\n".'<strong style="color:gray">&laquo;</strong> Done parsing: <span style="color:red">' . $original . '</span> as <span style="color:blue">'. join('.', $arr) ."</span><br>\n") : false;
- 
+
 	return join('.', $arr);
 }
 
@@ -403,7 +397,7 @@ function ode_civicrm_navigationMenu(&$menu) {
     'separator' => 1,
   ));
   _ode_civix_navigationMenu($menu);
-  }
+}
 
 /*
  * Function to check from email address are configured correctlly for
@@ -443,7 +437,7 @@ function checkValidEmails() {
       $error['Contribution Page(s)'][] = "<a target='_blank' href='" . CRM_Utils_System::url($links['Contribution Page(s)'], "reset=1&action=update&id={$values['id']}") . "'>{$values['title']}</a>";
     }
   }
-  
+
   // Events.
   $eventParams = array(
     'is_email_confirm' => 1,
@@ -489,14 +483,14 @@ function checkValidEmails() {
   if (substr($email, -$hostLength) != $getHostName) {
     $error['Organization Address and Contact Info'][]= "<a target='_blank' href='" . CRM_Utils_System::url('civicrm/admin/domain', 'action=update&reset=1') . "'>Click Here</a>";
   }
-  
+
   if (!empty($error)) {
     $errorMessage = 'Please check the following configurations for emails that have an invalid domain name.<ul>';
     foreach ($error as $title => $links) {
       $errorMessage .= "<li>$title<ul>";
       foreach ($links as $link) {
         $errorMessage .= "<li>$link</li>";
-      } 
+      }
       $errorMessage .= '</ul></li>';
     }
     $errorMessage .= '</ul>';
@@ -549,7 +543,7 @@ function ode_set_settings_value($settingValue) {
 }
 
 /**
- * Implementation of hook_civicrm_apiWrappers
+ * Implements hook_civicrm_apiWrappers().
  *
  */
 function ode_civicrm_apiWrappers(&$wrappers, $apiRequest) {
