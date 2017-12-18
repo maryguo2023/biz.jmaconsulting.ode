@@ -117,7 +117,7 @@ function _ode_civix_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
  * @return CRM_Ode_Upgrader
  */
 function _ode_civix_upgrader() {
-  if (!file_exists(__DIR__.'/CRM/Ode/Upgrader.php')) {
+  if (!file_exists(__DIR__ . '/CRM/Ode/Upgrader.php')) {
     return NULL;
   }
   else {
@@ -308,7 +308,7 @@ function _ode_civix_fixNavigationMenu(&$nodes) {
     if ($key === 'navID') {
       $maxNavID = max($maxNavID, $item);
     }
-    });
+  });
   _ode_civix_fixNavigationMenuItems($nodes, $maxNavID, NULL);
 }
 

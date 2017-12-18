@@ -105,6 +105,7 @@ function ode_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors
         $errors += toCheckEmail($email, 'notify');
       }
       break;
+
     case 'CRM_Batch_Form_Entry':
       foreach ($fields['field'] as $key => $value) {
         if (CRM_Utils_Array::value('send_receipt', $value)) {
@@ -119,10 +120,10 @@ function ode_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors
       $errors += toCheckEmail(CRM_Utils_Array::value('email_address', $fields), 'email_address');
       break;
 
-    case (substr($formName, 0, 16) == 'CRM_Report_Form_' ? TRUE : FALSE) :
+    case (substr($formName, 0, 16) == 'CRM_Report_Form_' ? TRUE : FALSE):
       if (CRM_Utils_Array::value('email_to', $fields) || CRM_Utils_Array::value('email_cc', $fields)) {
-          list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();
-          $errors += toCheckEmail($email, 'email_to');
+        list($ignore, $email) = CRM_Core_BAO_Domain::getNameAndEmail();
+        $errors += toCheckEmail($email, 'email_to');
       }
       break;
   }
@@ -198,10 +199,12 @@ function ode_civicrm_buildForm($formName, &$form) {
     ode_suppressEmails($options, $showNotice);
 
     if (empty($options)) {
-      $options = array(array(
-        'text' => ts('- Select -'),
-        'attr' => array('value' => ''),
-      ));
+      $options = array(
+        array(
+          'text' => ts('- Select -'),
+          'attr' => array('value' => ''),
+        ),
+      );
     }
     $options = array_values($options);
   }
@@ -261,7 +264,7 @@ function ode_suppressEmails(&$fromEmailAddress, $showNotice) {
       $message = " You can add another one <a href='%2'>here.</a>";
       $url = CRM_Utils_System::url('civicrm/admin/options/from_email_address', 'group=from_email_address&action=add&reset=1');
     }
-    $status = ts('The Outbound Domain Enforcement extension has prevented the following From Email Address option(s) from being used as it uses a different domain than the System-generated Mail Settings From Email Address configured at Administer > Communications > Organization Address and Contact Info: %1'. $message , array( 1=> implode(', ', $invalidEmails), 2=> $url));
+    $status = ts('The Outbound Domain Enforcement extension has prevented the following From Email Address option(s) from being used as it uses a different domain than the System-generated Mail Settings From Email Address configured at Administer > Communications > Organization Address and Contact Info: %1' . $message, array(1 => implode(', ', $invalidEmails), 2 => $url));
     if ($showNotice === 'returnMessage') {
       return array('msg' => $status);
     }
@@ -280,44 +283,39 @@ function pluckEmailFromHeader($header) {
   return NULL;
 }
 
-function get_domain($domain, $debug = false)
-{
+function get_domain($domain, $debug = FALSE) {
 	$original = $domain = strtolower($domain);
 
-	if (filter_var($domain, FILTER_VALIDATE_IP)) { return $domain; }
+	if (filter_var($domain, FILTER_VALIDATE_IP)) {
+    return $domain;
+  }
 
-	$debug ? print('<strong style="color:green">&raquo;</strong> Parsing: '.$original) : false;
+	$debug ? print('<strong style="color:green">&raquo;</strong> Parsing: '.$original) : FALSE;
 
-	$arr = array_slice(array_filter(explode('.', $domain, 4), function($value){
+	$arr = array_slice(array_filter(explode('.', $domain, 4), function($value) {
 		return $value !== 'www';
 	}), 0); //rebuild array indexes
 
-	if (count($arr) > 2)
-	{
+	if (count($arr) > 2) {
 		$count = count($arr);
 		$_sub = explode('.', $count === 4 ? $arr[3] : $arr[2]);
 
-		$debug ? print(" (parts count: {$count})") : false;
+		$debug ? print(" (parts count: {$count})") : FALSE;
 
-		if (count($_sub) === 2) // two level TLD
-		{
+		if (count($_sub) === 2) {// two level TLD
 			$removed = array_shift($arr);
-			if ($count === 4) // got a subdomain acting as a domain
-			{
+			if ($count === 4) {// got a subdomain acting as a domain
 				$removed = array_shift($arr);
 			}
-			$debug ? print("<br>\n" . '[*] Two level TLD: <strong>' . join('.', $_sub) . '</strong> ') : false;
+			$debug ? print("<br>\n" . '[*] Two level TLD: <strong>' . join('.', $_sub) . '</strong> ') : FALSE;
 		}
-		elseif (count($_sub) === 1) // one level TLD
-		{
+		elseif (count($_sub) === 1) {// one level TLD
 			$removed = array_shift($arr); //remove the subdomain
 
-			if (strlen($_sub[0]) === 2 && $count === 3) // TLD domain must be 2 letters
-			{
+			if (strlen($_sub[0]) === 2 && $count === 3) {// TLD domain must be 2 letters
 				array_unshift($arr, $removed);
 			}
-			else
-			{
+			else{
 				// non country TLD according to IANA
 				$tlds = array(
 					'aero',
@@ -344,36 +342,32 @@ function get_domain($domain, $debug = false)
 					'xxx',
 				);
 
-				if (count($arr) > 2 && in_array($_sub[0], $tlds) !== false) //special TLD don't have a country
-				{
+				if (count($arr) > 2 && in_array($_sub[0], $tlds) !== FALSE) {//special TLD don't have a country
 					array_shift($arr);
 				}
 			}
-			$debug ? print("<br>\n" .'[*] One level TLD: <strong>'.join('.', $_sub).'</strong> ') : false;
+			$debug ? print("<br>\n" . '[*] One level TLD: <strong>' . join('.', $_sub) . '</strong> ') : FALSE;
 		}
-		else // more than 3 levels, something is wrong
-		{
-			for ($i = count($_sub); $i > 1; $i--)
-			{
+		else {// more than 3 levels, something is wrong
+			for ($i = count($_sub); $i > 1; $i--) {
 				$removed = array_shift($arr);
 			}
-			$debug ? print("<br>\n" . '[*] Three level TLD: <strong>' . join('.', $_sub) . '</strong> ') : false;
+			$debug ? print("<br>\n" . '[*] Three level TLD: <strong>' . join('.', $_sub) . '</strong> ') : FALSE;
 		}
 	}
-	elseif (count($arr) === 2)
-	{
+	elseif (count($arr) === 2) {
 		$arr0 = array_shift($arr);
 
-		if (strpos(join('.', $arr), '.') === false
-			&& in_array($arr[0], array('localhost','test','invalid')) === false) // not a reserved domain
-		{
-			$debug ? print("<br>\n" .'Seems invalid domain: <strong>'.join('.', $arr).'</strong> re-adding: <strong>'.$arr0.'</strong> ') : false;
+		if (strpos(join('.', $arr), '.') === FALSE
+			&& in_array($arr[0], array('localhost','test','invalid')) === FALSE
+    ) { // not a reserved domain
+			$debug ? print("<br>\n" .'Seems invalid domain: <strong>'.join('.', $arr).'</strong> re-adding: <strong>'.$arr0.'</strong> ') : FALSE;
 			// seems invalid domain, restore it
 			array_unshift($arr, $arr0);
 		}
 	}
 
-	$debug ? print("<br>\n".'<strong style="color:gray">&laquo;</strong> Done parsing: <span style="color:red">' . $original . '</span> as <span style="color:blue">'. join('.', $arr) ."</span><br>\n") : false;
+	$debug ? print("<br>\n" . '<strong style="color:gray">&laquo;</strong> Done parsing: <span style="color:red">' . $original . '</span> as <span style="color:blue">' . join('.', $arr) . "</span><br>\n") : FALSE;
 
 	return join('.', $arr);
 }
@@ -381,9 +375,6 @@ function get_domain($domain, $debug = false)
 
 /**
  * This hook allows modification of the navigation menu.
- *
- * @param array $params
- *   Associated array of navigation menu entry to Modify/Add
  *
  * @return mixed
  */
