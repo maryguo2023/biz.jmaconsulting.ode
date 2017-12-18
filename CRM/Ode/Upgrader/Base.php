@@ -236,9 +236,9 @@ class CRM_Ode_Upgrader_Base {
   }
 
   /**
-  * Hook delegates
-  *
-  */
+   * Hook delegates
+   *
+   */
   public function onInstall() {
     $files = glob($this->extensionDir . '/sql/*_install.sql');
     if (is_array($files)) {
@@ -289,7 +289,7 @@ class CRM_Ode_Upgrader_Base {
   }
 
   public function onUpgrade($op, CRM_Queue_Queue $queue = NULL) {
-    switch($op) {
+    switch ($op) {
       case 'check':
         return array($this->hasPendingRevisions());
 
