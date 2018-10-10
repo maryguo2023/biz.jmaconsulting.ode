@@ -25,7 +25,7 @@ be configured at Administer > Communications > From Email Addresses
 From Email Addresses (civicrm/admin/options/from_email_address?reset=1).
 
 If the server running CiviCRM is not authorized to send mail on behalf of a From address, perhaps because of a very 
-tight SPF policy, it can lead to the server and / or its IP being blacklisted as a spammer. 
+tight SPF policy, it can lead to mail not being delivered and the server, the domain and / or its IP being blacklisted as a spammer. 
 
 This extension filters the From Email Address options provided to users as they are about to send an email. Only ones 
 that have the same domain as the domain under which the site is currently hosted are available, with the others 
