@@ -22,7 +22,7 @@ By default, CiviCRM uses the primary email address of a logged in user when send
 a different domain than the From Email Address just mentioned. It also allows From email addresses with other domains to 
 be configured at Administer > Communications > From Email Addresses 
 (civicrm/admin/options/from_email_address?group=from_email_address&reset=1), and at Administer > CiviMail > 
-From Email Addresses (civicrm/admin/options/from_email?group=from_email_address&reset=1).
+From Email Addresses (civicrm/admin/options/from_email_address?reset=1).
 
 If the server running CiviCRM is not authorized to send mail on behalf of a From address, perhaps because of a very 
 tight SPF policy, it can lead to the server and / or its IP being blacklisted as a spammer. 
