@@ -50,7 +50,7 @@ NB: Here are the forms that allow users to select From emails that will be filte
 *  The Organization Address and Contact Info form
 *  Various backend component creations. registrations, signups etc.
 
-In case you have configured your server's SPF policy to allow certain email addresses from other domains, under Administer > Communications > From Email Addresses (civicrm/admin/options/from_email_address?group=from_email_address&reset=1), you can navigate to Administer > Communications > ODE Settings and whitelist them.
+In case you have configured your server's SPF policy to allow certain email addresses from other domains, under Administer > Communications > From Email Addresses (civicrm/admin/options/from_email_address?group=from_email_address&reset=1), you can navigate to Administer > Communications > ODE Settings and whitelist them. This will also add the organization email address at civicrm/admin/domain?action=update&reset=1 to the whitelist.
 
 
 Installation

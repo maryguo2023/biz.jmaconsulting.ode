@@ -36,6 +36,7 @@
 class CRM_Ode_Form_Ode extends CRM_Admin_Form_Setting {
 
   public function buildQuickForm() {
+    checkValidEmails();
     $this->addYesNo('ode_from_allowed', ts('Whitelist FROM email addresses?'), NULL);
 
     $this->addButtons(array(

@@ -164,11 +164,51 @@ function toCheckEmail($email, $field, $returnHostName = FALSE) {
   if ($returnHostName) {
     return $host;
   }
-  $hostLength = strlen($host);
-  if (substr($email, -$hostLength) != $host) {
+
+  $isError = FALSE;
+  $odeSettings = Civi::settings()->get('ode_settings');
+  if (CRM_Utils_Array::value('ode_from_allowed', $odeSettings)) {
+    if (!isFromEmail($email)) {
+      $isError = TRUE;
+    }
+  }
+  else {
+    $hostLength = strlen($host);
+    if (substr($email, -$hostLength) != $host) {
+      $isError = TRUE;
+    }
+  }
+  if ($isError) {
     $error[$field] = ts('The Outbound Domain Enforcement extension has prevented this From Email Address from being used as it uses a different domain than the System-generated Mail Settings From Email Address configured at Administer > Communications > Organization Address and Contact Info.');
   }
   return $error;
+}
+
+/**
+ * @param $email
+ *
+ * @return bool
+ *
+ * check if passed email is in list of configured FROM email addresses
+ * return TRUE if so
+ */
+function isFromEmail($email) {
+  $domainEmails = CRM_Core_BAO_Email::domainEmails();
+  $params = ['id' => CRM_Core_Config::domainID()];
+  CRM_Core_BAO_Domain::retrieve($params, $domainDefaults);
+  $locParams = array('contact_id' => $domainDefaults['contact_id']);
+  $locationDefaults = CRM_Core_BAO_Location::getValues($locParams);
+  if (!empty($locationDefaults['email'])) {
+    $domainEmails['<' . $locationDefaults['email'][CRM_Core_Config::domainID()]['email'] . '>'] = 1;
+  }
+
+  foreach ($domainEmails as $domainEmail => $dontCare) {
+    if (strpos($domainEmail, "<{$email}>") !== FALSE) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
 }
 
 /**
@@ -191,7 +231,6 @@ function ode_civicrm_buildForm($formName, &$form) {
     $fromField = 'from_email_address';
     if (in_array($formName,
       array(
-        'CRM_Contact_Form_Task_Email',
         'CRM_Contribute_Form_Task_Email',
         'CRM_Event_Form_Task_Email',
         'CRM_Member_Form_Task_Email',
@@ -244,7 +283,7 @@ function ode_suppressEmails(&$fromEmailAddress, $showNotice) {
   }
 
   // for testing purpose on local
-  //$matches[1] = 'jmaconsulting.biz';
+  // $matches[1] = 'jmaconsulting.biz';
 
   $domainEmails = $invalidEmails = array();
   if (ode_get_settings_value()) {
