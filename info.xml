@@ -19,10 +19,20 @@
   <version>1.9</version>
   <develStage>stable</develStage>
   <compatibility>
-    <ver>5.9</ver>
+    <ver>5.38</ver>
   </compatibility>
   <comments>Thanks to Brescia University College for sponsoring the development of this module.</comments>
   <civix>
     <namespace>CRM/Ode</namespace>
+    <format>23.02.1</format>
   </civix>
+  <mixins>
+    <mixin>menu-xml@1.0.0</mixin>
+    <mixin>setting-php@1.0.0</mixin>
+  </mixins>
+  <classloader>
+    <psr0 prefix="CRM_" path="."/>
+    <psr4 prefix="Civi\" path="Civi"/>
+  </classloader>
+  <upgrader>CRM_Ode_Upgrader</upgrader>
 </extension>

@@ -11,14 +11,6 @@ function ode_civicrm_config(&$config) {
 }
 
 /**
- * Implements hook_civicrm_xmlMenu().
- *
- */
-function ode_civicrm_xmlMenu(&$files) {
-  _ode_civix_civicrm_xmlMenu($files);
-}
-
-/**
  * Implements hook_civicrm_install().
  */
 function ode_civicrm_install() {
@@ -28,14 +20,7 @@ function ode_civicrm_install() {
 }
 
 function ode_civicrm_postInstall() {
-  return _ode_civix_civicrm_postInstall();
-}
-
-/**
- * Implements hook_civicrm_uninstall().
- */
-function ode_civicrm_uninstall() {
-  return _ode_civix_civicrm_uninstall();
+  return;
 }
 
 /**
@@ -46,23 +31,8 @@ function ode_civicrm_enable() {
   return _ode_civix_civicrm_enable();
 }
 
-/**
- * Implements hook_civicrm_disable().
- */
-function ode_civicrm_disable() {
-  return _ode_civix_civicrm_disable();
-}
-
 function ode_civicrm_alterSettingsFolders(&$metaDataFolders) {
-  return _ode_civix_civicrm_alterSettingsFolders($metaDataFolders);
-}
-
-/**
- * Implements hook_civicrm_upgrade().
- *
- */
-function ode_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
-  return _ode_civix_civicrm_upgrade($op, $queue);
+  return;
 }
 
 function createOptionGroup() {
